@@ -1,0 +1,40 @@
+version: "3"
+services:
+  #https://github.com/bubuntux/nordvpn#environment-variables
+  vpn:
+    container_name: nordvpn
+    image: ghcr.io/bubuntux/nordvpn
+    ports:
+      - 9980:8080
+      - 3300:3000
+    cap_add:
+      - NET_ADMIN               # Required
+      - NET_RAW                 # Required
+    environment:                # Review https://github.com/bubuntux/nordvpn#environment-variables
+      - TOKEN=xxxxx     # Required
+      - CONNECT=United_States
+      - TECHNOLOGY=NordLynx
+      #- NETWORK=192.168.1.0/24  # So it can be accessed within the local network
+    #sysctls:
+    #  - net.ipv6.conf.all.disable_ipv6=1  # Recomended if using ipv4 only
+  torrent:
+    container_name: qbittorrent
+    image: ghcr.io/linuxserver/qbittorrent
+    network_mode: service:vpn
+    depends_on:
+      - vpn
+  chromium:
+    image: lscr.io/linuxserver/chromium:latest
+    container_name: chromium
+    security_opt:
+      - seccomp:unconfined #optional
+    network_mode: service:vpn
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - CHROME_CLI=https://www.linuxserver.io/ #optional
+    shm_size: "1gb"
+    restart: unless-stopped
+    depends_on:
+      - vpn
